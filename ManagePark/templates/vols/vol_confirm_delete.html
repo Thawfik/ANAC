@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Supprimer Vol{% endblock %}
+{% block title_header %}Confirmation de Suppression{% endblock title_header %}
+
+{% block content %}
+    <div class="alert alert-danger shadow-sm">
+        <h4>Êtes-vous sûr de vouloir supprimer le Vol **{{ vol.num_vol_arrive }}** ?</h4>
+        <p>Cette action supprimera toutes les données d'allocation et d'historique liées à ce vol.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger me-2"><i class="fas fa-trash"></i> Confirmer la Suppression</button>
+            <a href="{% url 'vol_detail' vol.pk %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+{% endblock content %}

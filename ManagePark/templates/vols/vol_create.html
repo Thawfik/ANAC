@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Enregistrer un Vol{% endblock %}
+{% block title_header %}Création d'un Nouveau Vol{% endblock title_header %}
+
+{% block content %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Informations du Vol et de l'Avion</h5>
+        </div>
+        <div class="card-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                {# --- SECTION VOL --- #}
+                <fieldset class="form-group border p-3 mb-4">
+                    <legend class="w-auto px-2 h6 text-primary">Détails du Vol</legend>
+
+                    <div class="row">
+                        <div class="col-md-6">{{ form.num_vol_arrive|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ form.num_vol_depart|as_crispy_field }}</div>
+                    </div>
+
+                    {# Utilisation des DateTimeField pour l'occupation #}
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.date_heure_debut_occupation|as_crispy_field }}
+                            <small class="form-text text-muted">Heure d'arrivée / Début d'occupation</small>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.date_heure_fin_occupation |as_crispy_field }}
+                            <small class="form-text text-muted">Heure de départ / Fin d'occupation</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">{{ form.provenance|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ form.destination|as_crispy_field }}</div>
+                    </div>
+                </fieldset>
+
+                {# --- SECTION AVION --- #}
+                <fieldset class="form-group border p-3">
+                    <legend class="w-auto px-2 h6 text-success">Avion </legend>
+
+                    <p class="text-muted small">
+                        Entrez l'immatriculation d'un avion existant pour le réutiliser, ou remplissez tous les champs pour en créer un nouveau.
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-4">{{ avion_form.immatriculation|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ avion_form.type|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ avion_form.description|as_crispy_field }}</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">{{ avion_form.longueur|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ avion_form.largeur|as_crispy_field }}</div>
+                    </div>
+
+                    {# Affichage des erreurs non liées aux champs spécifiques #}
+                    {% if avion_form.non_field_errors %}
+                        <div class="alert alert-danger">{{ avion_form.non_field_errors }}</div>
+                    {% endif %}
+                </fieldset>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Enregistrer
+                    </button>
+                    <a href="{% url 'vol_list' %}" class="btn btn-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock content %}

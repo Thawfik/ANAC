@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Détail du Vol {{ vol.num_vol_arrive }}{% endblock %}
+{% block title_header %}Détail du Vol {{ vol.num_vol_arrive }}{% endblock title_header %}
+
+{% block content %}
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+
+            {# --- Statut Principal du Vol --- #}
+            <div class="card shadow-sm">
+                <div class="card-header
+                    {% if vol.statut == 'ALLOUE' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
+                    <h4 class="mb-0">
+                        Statut d'Allocation :
+                        <strong>{{ vol.get_statut_display }}</strong>
+                        {% if vol.stand_alloue %}
+                            - Stand Alloué :
+                            <a href="{% url 'stand_detail' vol.stand_alloue.pk %}" class="btn btn-sm btn-light">
+                                {{ vol.stand_alloue.nom_operationnel }}
+                            </a>
+                        {% else %}
+                            (Aucun stand attribué)
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if vol.statut == 'ATTENTE' %}
+                        <p class="text-danger">Ce vol est actuellement en file d'attente. Lancez l'algorithme d'allocation pour lui trouver un stand compatible et disponible.</p>
+                        <form method="post" action="{% url 'allouer_stands' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plane-arrival"></i> Lancer l'Allocation
+                            </button>
+                        </form>
+                    {% elif est_occupant_actuel %}
+                        <div class="alert alert-success">
+                            Ce vol est actuellement en cours d'occupation du stand **{{ vol.stand_alloue.nom_operationnel }}**.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            Ce vol est alloué mais son occupation est prévue ultérieurement.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="row">
+
+        {# --- Colonne 1 : Détails du Vol et Allocation --- #}
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    Détails de Planification
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">N° Vol (Arrivée / Départ):</dt>
+                        <dd class="col-sm-7">{{ vol.num_vol_arrive }} / {{ vol.num_vol_depart|default:'N/A' }}</dd>
+
+                        <dt class="col-sm-5">Heure d'Arrivée (Début Occup.):</dt>
+                        <dd class="col-sm-7">
+                            <strong>{{ vol.date_heure_debut_occupation|date:"Y-m-d H:i" }}</strong>
+                        </dd>
+
+                        <dt class="col-sm-5">Heure de Départ (Fin Occup.):</dt>
+                        <dd class="col-sm-7">
+                            <strong>{{ vol.date_heure_fin_occupation|date:"Y-m-d H:i" }}</strong>
+                        </dd>
+
+                        <dt class="col-sm-5">Provenance:</dt>
+                        <dd class="col-sm-7">{{ vol.provenance }}</dd>
+
+                        <dt class="col-sm-5">Destination:</dt>
+                        <dd class="col-sm-7">{{ vol.destination }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        {# --- Colonne 2 : Détails de l'Avion --- #}
+        <div class="col-md-6">
+            {% if vol.avion %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        Détails de l'Avion
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-5">Immatriculation:</dt>
+                            <dd class="col-sm-7"><strong>{{ vol.avion.immatriculation }}</strong></dd>
+
+                            <dt class="col-sm-5">Type d'Avion:</dt>
+                            <dd class="col-sm-7">{{ vol.avion.type }}</dd>
+
+                            <dt class="col-sm-5">Longueur (Requise):</dt>
+                            <dd class="col-sm-7">{{ vol.avion.longueur }} m</dd>
+
+                            <dt class="col-sm-5">Largeur (Requise):</dt>
+                            <dd class="col-sm-7">{{ vol.avion.largeur }} m</dd>
+
+                            <dt class="col-sm-5">Description:</dt>
+                            <dd class="col-sm-7">{{ vol.avion.description|default:'N/A' }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-danger">Aucun avion n'est associé à ce vol.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# --- Actions --- #}
+    <div class="mt-4">
+        <a href="{% url 'vol_list' %}" class="btn btn-secondary">Retour à la Liste</a>
+        <a href="{% url 'vol_update' vol.pk %}" class="btn btn-warning">Modifier le Vol</a>
+        <a href="{% url 'vol_delete' vol.pk %}" class="btn btn-danger">Supprimer le Vol</a>
+    </div>
+
+{% endblock content %}

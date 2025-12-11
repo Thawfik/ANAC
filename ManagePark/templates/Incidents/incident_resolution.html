@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Résolution Incident{% endblock %}
+{% block title_header %}Gestion et Résolution de l'Incident du stand {{ incident.stand }}**{% endblock title_header %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5>Détails de l'Incident</h5>
+                </div>
+                <div class="card-body">
+
+                    <p><strong>Stand Affecté :</strong>
+                        <a href="{% url 'stand_detail' incident.stand.pk %}" class="fw-bold">{{ incident.stand.nom_operationnel }}</a>
+                    </p>
+                    <p><strong>Déclaré le :</strong> {{ incident.date_heure_declaration|date:"d M Y à H:i" }}</p>
+
+                    <hr>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.type_incident.id_for_label }}" class="form-label">Type d'Incident</label>
+                                {{ form.type_incident }}
+                                {% if form.type_incident.errors %}<div class="invalid-feedback d-block">{{ form.type_incident.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.statut.id_for_label }}" class="form-label">Statut</label>
+                                {{ form.statut }}
+                                {% if form.statut.errors %}<div class="invalid-feedback d-block">{{ form.statut.errors }}</div>{% endif %}
+                            </div>
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description Détaillée</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.date_heure_resolution.id_for_label }}" class="form-label">Date/Heure de Résolution (S'affiche si Statut = Résolu)</label>
+                            {% if form.date_heure_resolution.value %}
+                                {{ form.date_heure_resolution }}
+                            {% else %}
+                                <input type="datetime-local" name="{{ form.date_heure_resolution.name }}"
+                                       class="form-control" value="{{ now|date:'Y-m-d\TH:i' }}">
+                            {% endif %}
+                            {% if form.date_heure_resolution.errors %}<div class="invalid-feedback d-block">{{ form.date_heure_resolution.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-warning me-2"><i class="fas fa-save"></i> Enregistrer les Modifications</button>
+                            <a href="{% url 'stand_detail' incident.stand.pk %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

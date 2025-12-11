@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Détail Incident {{ incident.stand.nom_operationnel }}{% endblock %}
+{% block title_header %}Incident sur {{ incident.stand.nom_operationnel }}{% endblock title_header %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Détails de l'Incident</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Stand Affecté:</dt>
+                        <dd class="col-sm-8"><a href="{% url 'stand_detail' incident.stand.pk %}">{{ incident.stand.nom_operationnel }}</a></dd>
+
+                        <dt class="col-sm-4">Statut Actuel:</dt>
+                        <dd class="col-sm-8">
+                            {% if incident.statut == 'OUVERT' %}
+                                <span class="badge bg-danger">{{ incident.get_statut_display }}</span>
+                            {% elif incident.statut == 'ENCOURS' %}
+                                <span class="badge bg-warning">{{ incident.get_statut_display }}</span>
+                            {% else %}
+                                <span class="badge bg-success">{{ incident.get_statut_display }}</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">Type d'Incident:</dt>
+                        <dd class="col-sm-8">{{ incident.type_incident }}</dd>
+
+                        <dt class="col-sm-4">Déclaration:</dt>
+                        <dd class="col-sm-8">{{ incident.date_heure_declaration|date:"Y-m-d H:i:s" }}</dd>
+
+                        <dt class="col-sm-4">Résolution:</dt>
+                        <dd class="col-sm-8">
+                            {% if incident.date_heure_resolution %}
+                                {{ incident.date_heure_resolution|date:"Y-m-d H:i:s" }}
+                            {% else %}
+                                <span class="text-danger">En attente de résolution</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                    
+                    <h6 class="mt-4">Description:</h6>
+                    <p>{{ incident.description|linebreaksbr }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Actions</h6>
+                    <a href="{% url 'incident_update' incident.pk %}" class="btn btn-warning btn-block mb-2">Modifier l'Incident / Résoudre</a>
+                    <a href="{% url 'incident_delete' incident.pk %}" class="btn btn-outline-danger btn-block">Supprimer (Archiver)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <a href="{% url 'incident_list' %}" class="btn btn-secondary mt-3">Retour à la Liste</a>
+
+{% endblock content %}

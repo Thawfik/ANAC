@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Tableau de Bord Opérationnel{% endblock %}
+{% block title_header %}Aperçu Opérationnel de l'Aéroport{% endblock title_header %}
+
+{% block content %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <h2>📊 Statut des Stands</h2>
+    <div class="row mb-5">
+
+        {# Carte 1: Stands Occupés #}
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3 shadow">
+                <div class="card-header">Stands Actuellement Occupés</div>
+                <div class="card-body">
+                    <h1 class="card-title">{{ stand_stats.occupes }} / {{ stand_stats.total }}</h1>
+                </div>
+            </div>
+        </div>
+
+        {# Carte 2: Stands Bloqués (Incidents) #}
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3 shadow">
+                <div class="card-header">Stands Bloqués (Incidents Actifs)</div>
+                <div class="card-body">
+                    <h1 class="card-title">{{ stand_stats.bloques }}</h1>
+                </div>
+            </div>
+        </div>
+
+        {# Carte 3: Stands Libres/Disponibles #}
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3 shadow">
+                <div class="card-header">Stands Libres et Disponibles</div>
+                <div class="card-body">
+                    <h1 class="card-title">{{ stand_stats.disponibles }}</h1>
+                </div>
+            </div>
+        </div>
+
+        {# Carte 4: Stands Disponibles pour Allocation #}
+        <div class="col-md-3">
+            <div class="card bg-light mb-3 shadow">
+                <div class="card-header">Stands Total</div>
+                <div class="card-body">
+                    <h1 class="card-title text-dark">{{ stand_stats.total }}</h1>
+                    <a href="{% url 'stand_list' %}" class="btn btn-sm btn-outline-secondary">Gérer les Stands</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2>✈️ Gestion des Vols</h2>
+    <div class="row mb-5">
+
+        {# Carte 5: Vols en Attente #}
+        <div class="col-md-4">
+            <div class="card text-dark bg-warning mb-3 shadow">
+                <div class="card-header">Vols en Attente d'Allocation</div>
+                <div class="card-body">
+                    <h1 class="card-title">{{ vol_stats.attente }}</h1>
+                    <form method="post" action="{% url 'allouer_stands' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-primary">Lancer Allocation ({{ vol_stats.attente }} Vols)</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# Carte 6: Vols Alloués Futurs #}
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3 shadow">
+                <div class="card-header">Vols Alloués (Futurs)</div>
+                <div class="card-body">
+                    <h1 class="card-title">{{ vol_stats.alloues_futurs }}</h1>
+                    <a href="{% url 'vol_list' %}" class="btn btn-sm btn-light">Voir la Liste</a>
+                </div>
+            </div>
+        </div>
+
+        {# Carte 7: Prochain Vol à Allouer #}
+        <div class="col-md-4">
+            <div class="card text-dark bg-light mb-3 shadow">
+                <div class="card-header">Prochaine Arrivée en Attente</div>
+                <div class="card-body">
+                    {% if vol_stats.prochain_vol %}
+                        <h5 class="card-title">{{ vol_stats.prochain_vol.num_vol_arrive }}</h5>
+                        <p class="card-text small mb-1">
+                            Arrivée : {{ vol_stats.prochain_vol.date_heure_debut_occupation|date:"Y-m-d H:i" }}
+                        </p>
+                        <a href="{% url 'vol_detail' vol_stats.prochain_vol.pk %}" class="btn btn-sm btn-outline-dark">Détails du Vol</a>
+                    {% else %}
+                        <h5 class="card-title">Aucun vol en attente.</h5>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2>⚠️ Incidents Actifs ({{ incident_stats }})</h2>
+    <div class="row">
+        <div class="col-md-12">
+            {% if derniers_incidents %}
+                <ul class="list-group shadow-sm">
+                    {% for incident in derniers_incidents %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center
+                            {% if incident.statut == 'OUVERT' %}list-group-item-danger{% else %}list-group-item-warning{% endif %}">
+
+                            <strong>{{ incident.stand.nom_operationnel }}</strong> - {{ incident.type_incident }}
+
+                            <span class="badge
+                                {% if incident.statut == 'OUVERT' %}bg-danger{% else %}bg-warning{% endif %}
+                                me-3">{{ incident.get_statut_display }}</span>
+
+                            <small class="text-muted">Déclaré le {{ incident.date_heure_declaration|date:"Y-m-d H:i" }}</small>
+
+                            <a href="{% url 'incident_update' incident.pk %}" class="btn btn-sm btn-outline-secondary">Gérer</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                 <div class="alert alert-success" role="alert">
+                    Aucun incident actif. Tous les stands disponibles sont opérationnels.
+                 </div>
+            {% endif %}
+        </div>
+    </div>
+
+{% endblock content %}

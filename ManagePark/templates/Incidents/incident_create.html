@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Gestion Incident{% endblock %}
+{% block title_header %}
+    {% if object %}Modifier l'Incident sur {{ object.stand.nom_operationnel }}{% else %}Déclarer un Nouvel Incident{% endif %}
+{% endblock title_header %}
+
+{% block content %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                {# Si l'incident existe, le stand ne devrait pas être modifiable #}
+                {% if object %}
+                    <fieldset disabled>
+                        {{ form.stand|as_crispy_field }}
+                    </fieldset>
+                    {# Ajouter un champ caché pour passer l'ID du stand si le modèle de formulaire le nécessite #}
+                {% else %}
+                    {{ form.stand|as_crispy_field }}
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6">{{ form.type_incident|as_crispy_field }}</div>
+                </div>
+
+                {{ form.description|as_crispy_field }}
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        {% if object %}Mettre à Jour l'Incident{% else %}Déclarer l'Incident{% endif %}
+                    </button>
+                    <a href="{% url 'incident_list' %}" class="btn btn-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock content %}

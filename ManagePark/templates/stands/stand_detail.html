@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}Détails Stand {{ stand.nom_operationnel }}{% endblock %}
+{% block title_header %}Détails du Stand {{ stand.nom_operationnel }}{% endblock title_header %}
+
+{% block content %}
+
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <h4 class="mb-3">Informations Physiques et Disponibilité</h4>
+            <div class="card shadow-sm h-100">
+                {# Utilisation du statut opérationnel combiné (HORS_SERVICE > OCCUPE > LIBRE) #}
+                <div class="card-header
+                    {% if stand.statut_operationnel == 'HORS_SERVICE' %}bg-secondary text-white{% elif stand.statut_operationnel == 'OCCUPE' %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+                    Statut Opérationnel : **{{ stand.get_statut_operationnel_display }}**
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th>Nom Opérationnel:</th>
+                            <td><strong>{{ stand.nom_operationnel }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Dimensions (L x l):</th>
+                            <td>{{ stand.longueur }} m x {{ stand.largeur }} m</td>
+                        </tr>
+                        <tr>
+                            <th>Distance Aérogare:</th>
+                            <td>{{ stand.distance_stand_aerogare }} mètres</td>
+                        </tr>
+                        <tr>
+                            <th>Disponibilité Manuelle:</th>
+                            <td>
+                                {% if stand.disponibilite %}
+                                    <span class="badge bg-success">OUI</span>
+                                {% else %}
+                                    <span class="badge bg-danger">NON (Maintenance)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="mt-3 d-flex justify-content-end">
+                        <a href="{% url 'stand_update' stand.pk %}" class="btn btn-warning me-2">Modifier le Stand</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <h4 class="mb-3">⏱️ État Actuel et Vol</h4>
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    {# ---------------- ALERTE INCIDENT ---------------- #}
+                    {% if incidents_actifs %}
+                        <div class="alert alert-danger mb-4">
+                            <i class="fas fa-exclamation-triangle"></i> **ALERTE :** Stand Hors Service en raison de <strong>{{ incidents_actifs|length }} incident(s) actif(s)</strong>.
+                            <a href="{% url 'incident_list' %}" class="alert-link">Gérer les Incidents</a>.
+                        </div>
+                    {% endif %}
+
+                    {# ---------------- VOL ACTUEL (allocation_courante) ---------------- #}
+                    {% if allocation_courante %}
+                        <h5 class="text-danger">Vol Actuellement sur Stand (Occupation)</h5>
+                        <div class="alert alert-danger mb-4">
+                            <p class="mb-1">Vol :
+                                <strong><a href="{% url 'vol_detail' allocation_courante.vol.pk %}" class="alert-link">{{ allocation_courante.vol.num_vol_arrive }}</a></strong>
+                            </p>
+                            <p class="mb-1">Début Occupation : <strong>{{ allocation_courante.heure_debut|time:" H:i" }}</strong></p>
+                            <p class="mb-0">Fin Planifiée (ETD) : <strong>{{ allocation_courante.heure_fin|time:" H:i" }}</strong></p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            Ce Stand est actuellement **Libre**. Aucune allocation active.
+                        </div>
+                    {% endif %}
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h4 class="mb-3">📜 Historique des Allocations Terminées et Incidents</h4>
+
+            <ul class="nav nav-tabs" id="historiqueTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="allocations-tab" data-bs-toggle="tab" data-bs-target="#allocations" type="button" role="tab" aria-controls="allocations" aria-selected="true">Allocations ({{ historique_allocations|length }})</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="incidents-tab" data-bs-toggle="tab" data-bs-target="#incidents" type="button" role="tab" aria-controls="incidents" aria-selected="false">Incidents ({{ stand.incidents_rapportes.count }})</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="historiqueTabsContent">
+                <div class="tab-pane fade show active" id="allocations" role="tabpanel" aria-labelledby="allocations-tab">
+                    {% if historique_allocations %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm mt-3">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Vol</th>
+                                        <th>Début Occupation</th>
+                                        <th>Fin Occupation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for h in historique_allocations %}
+                                        <tr>
+                                            <td><a href="{% url 'vol_detail' h.vol.pk %}">{{ h.vol.num_vol_arrive }}</a></td>
+                                            <td>{{ h.heure_debut|time:" H:i" }}</td>
+                                            <td>{{ h.heure_fin|time:" H:i" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-light border mt-3">Aucun historique d'allocation terminé.</div>
+                    {% endif %}
+                </div>
+
+                <div class="tab-pane fade" id="incidents" role="tabpanel" aria-labelledby="incidents-tab">
+                    {% with stand.incidents_rapportes.all as incidents %}
+                        {% if incidents %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm mt-3">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Déclaré le</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for incident in incidents %}
+                                            <tr>
+                                                <td>{{ incident.type_incident }}</td>
+                                                <td>{{ incident.date_heure_declaration|time:" H:i" }}</td>
+                                                <td><span class="badge
+                                                    {% if incident.statut == 'OUVERT' %}bg-danger{% elif incident.statut == 'ENCOURS' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                                    {{ incident.get_statut_display }}
+                                                </span></td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-light border mt-3">Aucun incident n'a été signalé pour ce stand.</div>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
