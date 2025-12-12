@@ -52,19 +52,25 @@ class Stand(models.Model):
 
     @property
     def statut_operationnel(self):
-        """Détermine le statut opérationnel principal selon la nouvelle logique."""
-        # 1. HORS SERVICE (Maintenance/Incident)
-        # Assumant que 'disponibilite' existe et que 'incidents_rapportes' est la relation inverse vers Incident
+    # 1. HORS_SERVICE si maintenance ou incident
         if not self.disponibilite or self.incidents_rapportes.filter(statut__in=['OUVERT', 'ENCOURS']).exists():
             return 'HORS_SERVICE'
-
-        # 2. OCCUPE (Allocation en cours)
-        if self.vol_occupant_actuel:
+        
+        # 2. OCCUPE si un vol est alloué (peu importe la date)
+        if self.vols_alloues.filter(statut='ALLOUE').exists():
             return 'OCCUPE'
-
+        
         # 3. LIBRE
         return 'LIBRE'
-
+    def get_statut_operationnel_display(self):
+        """Pour l'affichage dans les templates."""
+        statut_map = {
+            'LIBRE': 'Libre',
+            'OCCUPE': 'Occupé',
+            'HORS_SERVICE': 'Hors Service'
+        }
+        return statut_map.get(self.statut_operationnel, 'Inconnu')
+    
     @property
     def vol_occupant_actuel(self):
         """

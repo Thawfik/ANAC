@@ -14,7 +14,6 @@
                     <th>Dimensions </th>
                     <th>Distance Aérogare (m)</th>
                     <th>État</th>
-                    <th>Vol Actuel</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -34,34 +33,6 @@
                             <span class="badge bg-success">{{ stand.get_statut_operationnel_display }}</span>
                         {% endif %}
 
-                    </td>
-                    <td>
-                        {% with stand.allocation_courante as allocation_courante %}
-
-                            {% if allocation_courante %}
-
-                                {# Le vol associé est accessible directement via l'objet allocation #}
-                                {% with allocation_courante.vol as vol_actuel %}
-                                    <div class="alert alert-primary">
-                                        <p class="mb-1">Vol Actif :
-                                            <strong><a href="{% url 'vol_detail' vol_actuel.pk %}" class="alert-link">{{ vol_actuel.num_vol_arrive }}</a></strong>
-                                        </p>
-                                        {# Affichage sécurisé de l'heure de début de l'allocation (DateTimeField) #}
-                                        <p class="mb-1">Début d'Occupation : <strong>{{ allocation_courante.heure_debut|time:" H:i" }}</strong></p>
-
-                                        {# Affichage sécurisé de l'heure de fin de l'allocation (DateTimeField) #}
-                                        <p class="mb-0">Fin Planifiée : <strong>{{ allocation_courante.heure_fin|time:" H:i" }}</strong></p>
-                                    </div>
-                                {% endwith %}
-
-                                <button class="btn btn-sm btn-outline-danger mt-2" disabled>Libérer Manuellement (Développement)</button>
-                            {% else %}
-                                <div class="alert alert-info">
-                                     Stand disponible
-                                </div>
-                            {% endif %}
-
-                        {% endwith %}
                     </td>
                     <td>
                         <a href="{% url 'stand_detail' stand.pk %}" class="btn btn-sm btn-info">Détails</a>

@@ -157,9 +157,33 @@ class VolUpdateForm(forms.ModelForm):
         # NOTE : Nous n'incluons pas 'statut' car il doit être géré par les services (Allocation)
 
         widgets = {
-            'date_heure_debut_occupation': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'date_heure_fin_occupation': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'date_heure_debut_occupation': forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control'
+                },
+                format='%Y-%m-%dT%H:%M'
+            ),
+            'date_heure_fin_occupation': forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control'
+                },
+                format='%Y-%m-%dT%H:%M'
+            ),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Formater les dates existantes pour l'affichage
+        datetime_fields = ['date_heure_debut_occupation', 'date_heure_fin_occupation']
+        for field in datetime_fields:
+            if self.initial.get(field):
+                if isinstance(self.initial[field], str):
+                    # Si c'est déjà une string, la garder
+                    continue
+                # Convertir l'objet datetime en string formatée
+                self.initial[field] = self.initial[field].strftime('%Y-%m-%dT%H:%M')
 
     def clean(self):
         cleaned_data = super().clean()

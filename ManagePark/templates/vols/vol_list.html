@@ -9,8 +9,6 @@
             <i class="fas fa-plus"></i> Enregistrer un Nouveau Vol
         </a>
 
-        {# Intégration du déclenchement de l'allocation #}
-        {# NOTE : Vous devrez créer une URL 'allocation_run' et une vue associée pour déclencher le service #}
         <form method="post" action="{% url 'allouer_stands' %}" class="d-inline">
             {% csrf_token %}
             <button type="submit" class="btn btn-primary">
@@ -42,7 +40,7 @@
                             </td>
                             <td>
                                 {% if vol.avion %}
-                                    {{ vol.avion.immatriculation }} ({{ vol.avion.type }})
+                                    {{ vol.avion.immatriculation }} ({{ vol.avion.type_avion }})
                                 {% else %}
                                     <span class="text-danger">Non Assigné</span>
                                 {% endif %}
@@ -63,7 +61,14 @@
                             </td>
                             <td>
                                 {% if vol.stand_alloue %}
-                                    <span class="badge bg-success">{{ vol.stand_alloue.nom_operationnel }}</span>
+                                    {# ✅ Utiliser l'attribut ajouté dans la vue #}
+                                    {% if vol.stand_a_incident %}
+                                        <span class="badge bg-danger" title="Stand hors service - Incident actif">
+                                            <i class="fas fa-exclamation-triangle"></i> {{ vol.stand_alloue.nom_operationnel }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ vol.stand_alloue.nom_operationnel }}</span>
+                                    {% endif %}
                                 {% else %}
                                     <span class="badge bg-secondary">--</span>
                                 {% endif %}
@@ -79,7 +84,18 @@
                             </td>
                             <td class="text-nowrap">
                                 <a href="{% url 'vol_detail' vol.pk %}" class="btn btn-sm btn-info">Détails</a>
-                                {# Ajoutez ici les liens vers 'vol_update' et 'vol_delete' si vous les implémentez plus tard #}
+                                
+                                {# ✅ BOUTON RÉALLOUER - Visible si stand a incident #}
+                                {% if vol.statut == 'ALLOUE' and vol.stand_a_incident %}
+                                    <form method="post" action="{% url 'reallouer_vol_action' vol.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-warning" 
+                                                title="Réallouer ce vol à un autre stand"
+                                                onclick="return confirm('Voulez-vous réallouer le vol {{ vol.num_vol_arrive }} à un autre stand ?');">
+                                            <i class="fas fa-sync"></i> Réallouer
+                                        </button>
+                                    </form>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}

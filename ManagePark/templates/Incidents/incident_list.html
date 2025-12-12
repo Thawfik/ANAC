@@ -5,7 +5,7 @@
 
 {% block content %}
     <div class="d-flex justify-content-end mb-3">
-        <a href="{% url 'incident_create' %}" class="btn btn-danger">
+        <a href="{% url 'stand_list' %}" class="btn btn-danger">
             <i class="fas fa-exclamation-triangle"></i> Déclarer un Nouvel Incident
         </a>
     </div>
@@ -48,8 +48,8 @@
                                 {% endif %}
                             </td>
                             <td class="text-nowrap">
-                                <a href="{% url 'incident_detail' incident.pk %}" class="btn btn-sm btn-info">Détails</a>
-                                <a href="{% url 'incident_update' incident.pk %}" class="btn btn-sm btn-warning">Modifier</a>
+                                <a href="#" class="btn btn-sm btn-info">Détails</a>
+                                <a href="#" class="btn btn-sm btn-warning">Modifier</a>
                             </td>
                         </tr>
                     {% endfor %}

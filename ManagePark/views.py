@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView, DetailView, UpdateView, DeleteView
-from django.db.models import  Exists, OuterRef, F
+from django.db.models import Exists, OuterRef, F, Q
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
@@ -17,6 +17,35 @@ from .serviceAllocation import reallouer_vol_unique, allouer_stands_optimise
 
 
 # =========================================================
+# VUE DASHBOARD
+# =========================================================
+class AllouerStandsView(View):
+    """
+    Vue pour déclencher manuellement l'allocation des stands aux vols en attente.
+    Accessible via POST depuis le dashboard.
+    """
+    def post(self, request):
+        allocated, unallocated = allouer_stands_optimise()
+        
+        if allocated > 0:
+            messages.success(
+                request, 
+                f"✅ {allocated} vol(s) alloué(s) avec succès."
+            )
+        
+        if unallocated > 0:
+            messages.warning(
+                request,
+                f"⚠️ {unallocated} vol(s) n'ont pas pu être alloués (pas de stand compatible disponible)."
+            )
+        
+        if allocated == 0 and unallocated == 0:
+            messages.info(request, "ℹ️ Aucun vol en attente à allouer.")
+        
+        return redirect('dashboard')
+
+
+# =========================================================
 # VUES VOLS-AVION
 # =========================================================
 class VolCreateView(CreateView):
@@ -24,7 +53,6 @@ class VolCreateView(CreateView):
     Permet de créer un nouveau vol, avec création/sélection optionnelle d'un avion.
     """
     model = Vol
-    # Champs du Vol que l'utilisateur doit remplir
     fields = [
         'num_vol_arrive', 'num_vol_depart', 'date_heure_debut_occupation',
         'date_heure_fin_occupation', 'provenance', 'destination'
@@ -34,7 +62,6 @@ class VolCreateView(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Création d'un formulaire pour l'avion (pour l'intégration dans le même template)
         if self.request.POST:
             context['avion_form'] = AvionForm(self.request.POST)
         else:
@@ -42,33 +69,25 @@ class VolCreateView(CreateView):
         return context
 
     def form_valid(self, form):
-        # Le formulaire du Vol est déjà validé si nous atteignons ce point.
         avion_form = AvionForm(self.request.POST)
 
-        # 1. Valider le formulaire Avion
         if avion_form.is_valid():
-
             immatriculation = avion_form.cleaned_data['immatriculation']
 
-            # Vérifier si l'avion existe (grâce à la logique clean_immatriculation)
             if avion_form.cleaned_data.get('est_existant'):
-                # Récupération si l'avion existe
                 avion_instance = Avion.objects.get(immatriculation=immatriculation)
             else:
-                # Création si l'avion est nouveau (les champs sont remplis car la validation est passée)
                 avion_instance = avion_form.save()
 
-            # 2. Associer et Sauvegarder le Vol
             form.instance.avion = avion_instance
             form.instance.statut = 'ATTENTE'
 
             return super().form_valid(form)
         else:
-            # 3. Échec si la validation de l'Avion n'a pas réussi (que ce soit pour une nouvelle création ou une mauvaise immat.)
             self.object = form.instance
             context = self.get_context_data()
             context['form'] = form
-            context['avion_form'] = avion_form  # AvionForm avec erreurs pour affichage
+            context['avion_form'] = avion_form
             return self.render_to_response(context)
 
 
@@ -77,37 +96,54 @@ class VolListView(ListView):
     model = Vol
     context_object_name = 'vols'
     template_name = 'vols/vol_list.html'
-    ordering = ['heure_arrivee'] # Trier par ETA
+    ordering = ['date_heure_debut_occupation']
 
     def get_queryset(self):
-        # N'afficher que les vols actifs dans le système d'allocation
-        return Vol.objects.filter(statut__in=['ATTENTE', 'ALLOUE']).select_related('avion')
+        return Vol.objects.filter(
+            statut__in=['ATTENTE', 'ALLOUE']
+        ).select_related('avion', 'stand_alloue').prefetch_related(
+            'stand_alloue__incidents_rapportes'
+        )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # ✅ Ajouter l'information des incidents pour chaque vol
+        vols_avec_incidents = []
+        for vol in context['vols']:
+            vol.stand_a_incident = False
+            if vol.stand_alloue:
+                # Vérifier si le stand a un incident actif
+                vol.stand_a_incident = vol.stand_alloue.incidents_rapportes.filter(
+                    statut__in=['OUVERT', 'ENCOURS']
+                ).exists()
+            vols_avec_incidents.append(vol)
+        
+        context['vols'] = vols_avec_incidents
+        return context
 
 
 class VolUpdateView(UpdateView):
     """Permet de modifier les détails d'un vol existant."""
     model = Vol
-    # Utilise les mêmes champs d'entrée que la création, car ce sont les données modifiables.
     fields = [
         'num_vol_arrive', 'num_vol_depart', 'date_heure_debut_occupation',
         'date_heure_fin_occupation', 'provenance', 'destination',
-        # Note: L'avion n'est pas modifiable ici pour simplifier.
     ]
     context_object_name = 'vol'
-    template_name = 'vols/vol_create.html'  # Réutilise le même template de formulaire
+    template_name = 'vols/vol_create.html'
 
     def get_success_url(self):
-        # Redirige vers la page de détails du vol après modification
         messages.success(self.request, f"Le vol {self.object.num_vol_arrive} a été mis à jour.")
         return reverse_lazy('vol_detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        # Si les heures d'occupation sont modifiées, le statut doit redevenir 'ATTENTE'
-        # pour forcer l'algorithme d'allocation à re-vérifier la disponibilité du stand.
-
-        # NOTE IMPORTANTE : Ceci est une règle métier !
+        # Si les heures d'occupation sont modifiées, réinitialiser l'allocation
         if (form.cleaned_data['date_heure_debut_occupation'] != self.object.date_heure_debut_occupation or
                 form.cleaned_data['date_heure_fin_occupation'] != self.object.date_heure_fin_occupation):
+            
+            # Pas besoin de modifier le statut du stand manuellement
+            # Il sera recalculé automatiquement via la propriété @property
             form.instance.statut = 'ATTENTE'
             form.instance.stand_alloue = None
             messages.info(self.request,
@@ -124,7 +160,8 @@ class VolDeleteView(DeleteView):
     success_url = reverse_lazy('vol_list')
 
     def form_valid(self, form):
-        # Ajout d'un message flash avant la suppression effective
+        # Pas besoin de libérer le stand manuellement
+        # Le statut sera recalculé automatiquement
         messages.success(self.request, f"Le vol {self.object.num_vol_arrive} a été supprimé.")
         return super().form_valid(form)
 
@@ -135,29 +172,25 @@ class VolDetailView(DetailView):
     context_object_name = 'vol'
     template_name = 'vols/vol_detail.html'
 
-    # Préfétcher l'Avion et le Stand pour éviter les requêtes inutiles dans le template
     def get_queryset(self):
         return Vol.objects.select_related('avion', 'stand_alloue')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Le vol est accessible via self.object ou context['vol']
         vol = self.object
+        now = timezone.now()
 
-        # Ajout d'une information utile : Est-ce que le vol est l'occupant actuel du stand ?
+        # Le vol est-il actuellement occupant du stand ?
         if vol.stand_alloue and vol.statut == 'ALLOUE':
-            # Utilise la propriété que nous avons définie sur le modèle Stand
-            occupant_actuel = vol.stand_alloue.vol_occupant_actuel
-
-            if occupant_actuel and occupant_actuel.pk == vol.pk:
-                context['est_occupant_actuel'] = True
-            else:
-                context['est_occupant_actuel'] = False
+            est_actuel = (
+                vol.date_heure_debut_occupation <= now <= vol.date_heure_fin_occupation
+            )
+            context['est_occupant_actuel'] = est_actuel
         else:
             context['est_occupant_actuel'] = False
 
         return context
+
 
 # =========================================================
 # VUES STANDS
@@ -168,9 +201,7 @@ class StandListView(ListView):
     context_object_name = 'stands'
     template_name = 'stands/stand_list.html'
 
-    # Pas de pré-fetching complexe nécessaire ici, mais tri utile
     def get_queryset(self):
-        # Trier par nom opérationnel pour un affichage logique
         return Stand.objects.all().order_by('nom_operationnel')
 
 
@@ -186,22 +217,22 @@ class StandDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         stand = self.object
-
-        # 1. Vols alloués : Afficher uniquement les vols futurs alloués à ce stand
         now = timezone.now()
-        context['vols_futurs_alloues'] = stand.vol_set.filter(
+
+        # ✅ CORRECTION: Utiliser le bon related_name 'vols_alloues'
+        context['vols_futurs_alloues'] = stand.vols_alloues.filter(
             statut='ALLOUE',
             date_heure_fin_occupation__gt=now
         ).order_by('date_heure_debut_occupation')
 
-        # 2. Incidents en cours/ouverts
+        # Incidents en cours/ouverts
         context['incidents_actifs'] = Incident.objects.filter(
             stand=stand,
             statut__in=['OUVERT', 'ENCOURS']
         ).order_by('-date_heure_declaration')
 
-        # 3. Calcul de l'occupant actuel (logique métier)
-        context['occupant_actuel'] = stand.vol_occupant_actuel  # Utilise la propriété du modèle
+        # Vol actuellement occupant (via la propriété du modèle)
+        context['occupant_actuel'] = stand.vol_occupant_actuel
 
         return context
 
@@ -214,17 +245,18 @@ class StandCreateView(CreateView):
     success_url = reverse_lazy('stand_list')
 
     def form_valid(self, form):
-        # Assurer la disponibilité 'DISPONIBLE' par défaut à la création
-        form.instance.disponibilite =True
-        Stand.statut_operationnel = 'LIBRE'
+        # Assurer la disponibilité par défaut
+        form.instance.disponibilite = True
+        # ✅ CORRECTION: Ne pas essayer de modifier statut_operationnel
+        # Il sera calculé automatiquement via @property
         messages.success(self.request, f"Le stand {form.instance.nom_operationnel} a été créé.")
         return super().form_valid(form)
 
 
 class StandUpdateView(UpdateView):
-    """Permet de modifier les dimensions ou le statut opérationnel d'un stand."""
+    """Permet de modifier les dimensions ou le nom d'un stand."""
     model = Stand
-    fields = ['nom_operationnel', 'longueur', 'largeur', 'statut_operationnel']
+    fields = ['nom_operationnel', 'longueur', 'largeur', 'disponibilite']
     context_object_name = 'stand'
     template_name = 'stands/stand_create.html'
 
@@ -233,15 +265,10 @@ class StandUpdateView(UpdateView):
         return reverse_lazy('stand_detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        # Logique métier: Si les dimensions sont modifiées, réallouer les vols affectés.
-        # NOTE : Cela pourrait être très coûteux. On se contente d'afficher un message
-        # pour l'instant, car la réallocation complète est complexe à gérer ici.
-        # Idéalement, on marquerait les vols comme 'ATTENTE' si la nouvelle dimension est trop petite.
-
         if (form.cleaned_data['longueur'] != self.object.longueur or
                 form.cleaned_data['largeur'] != self.object.largeur):
             messages.warning(self.request,
-                             "Les dimensions du stand ont changé. Veuillez relancer l'algorithme d'allocation pour vérifier la validité des vols futurs.")
+                             "Les dimensions du stand ont changé. Veuillez vérifier les vols alloués.")
 
         return super().form_valid(form)
 
@@ -254,9 +281,9 @@ class StandDeleteView(DeleteView):
     success_url = reverse_lazy('stand_list')
 
     def form_valid(self, form):
-        # Vérification métier : Interdire la suppression si des vols futurs y sont alloués
         now = timezone.now()
-        vols_futurs = self.object.vol_set.filter(
+        # ✅ CORRECTION: Utiliser le bon related_name 'vols_alloues'
+        vols_futurs = self.object.vols_alloues.filter(
             statut='ALLOUE',
             date_heure_debut_occupation__gt=now
         )
@@ -268,8 +295,6 @@ class StandDeleteView(DeleteView):
 
         messages.success(self.request, f"Le stand {self.object.nom_operationnel} a été supprimé.")
         return super().form_valid(form)
-
-
 # =========================================================
 # VUES INCIDENT
 # =========================================================
@@ -429,7 +454,6 @@ from django.views.generic import TemplateView
 
 
 class DashboardView(TemplateView):
-    """Vue principale affichant un résumé des stands, vols et incidents."""
     template_name = 'dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -437,20 +461,20 @@ class DashboardView(TemplateView):
         now = timezone.now()
 
         # --- 1. Statistiques des Stands ---
-
-        # Le statut_operationnel est déjà géré par la propriété du modèle
         total_stands = Stand.objects.count()
+        
+        # Stands bloqués par incidents
         stands_bloques = Stand.objects.filter(
-            # Un stand est bloqué s'il a un incident actif
             incidents_rapportes__statut__in=['OUVERT', 'ENCOURS']
         ).distinct().count()
-
-        # Stands actuellement occupés (via la propriété vol_occupant_actuel)
-        stands_occupes = 0
-        for stand in Stand.objects.all():
-            if stand.vol_occupant_actuel:
-                stands_occupes += 1
-
+        
+        # CORRECTION ICI : Utiliser la même logique que statut_operationnel
+        # Stands occupés = stands avec au moins un vol ALLOUE
+        stands_occupes = Stand.objects.filter(
+            vols_alloues__statut='ALLOUE'
+        ).distinct().count()
+        
+        # Stands disponibles = total - (occupés + bloqués)
         stands_disponibles = total_stands - stands_bloques - stands_occupes
 
         context['stand_stats'] = {
@@ -460,25 +484,33 @@ class DashboardView(TemplateView):
             'disponibles': stands_disponibles,
         }
 
-        # --- 2. Statistiques des Vols ---
-
+        # --- 2. Statistiques détaillées des vols par stand ---
+        # Pour comprendre la différence entre les comptes
+        context['vols_alloues_total'] = Vol.objects.filter(statut='ALLOUE').count()
+        context['vols_en_cours_occupation'] = Vol.objects.filter(
+            statut='ALLOUE',
+            date_heure_debut_occupation__lte=now,
+            date_heure_fin_occupation__gt=now
+        ).count()
+        
+        # --- Le reste de ton code reste identique ---
         # Vols en attente d'allocation
         vols_attente = Vol.objects.filter(statut='ATTENTE').count()
 
-        # Vols alloués et futurs (ne sont pas encore arrivés)
+        # Vols alloués et futurs
         vols_alloues_futurs = Vol.objects.filter(
             statut='ALLOUE',
             date_heure_debut_occupation__gt=now
         ).count()
 
-        # Vols en cours d'occupation (arrivés mais pas encore partis)
+        # Vols en cours d'occupation
         vols_en_cours = Vol.objects.filter(
             statut='ALLOUE',
             date_heure_debut_occupation__lte=now,
             date_heure_fin_occupation__gt=now
         ).count()
 
-        # Prochain vol à allouer (utile pour la priorisation)
+        # Prochain vol à allouer
         prochain_vol = Vol.objects.filter(statut='ATTENTE').order_by('date_heure_debut_occupation').first()
 
         context['vol_stats'] = {
@@ -489,18 +521,15 @@ class DashboardView(TemplateView):
         }
 
         # --- 3. Statistiques des Incidents ---
-
         context['incident_stats'] = Incident.objects.filter(
             statut__in=['OUVERT', 'ENCOURS']
         ).count()
 
-        # Liste des 5 derniers incidents actifs
         context['derniers_incidents'] = Incident.objects.filter(
             statut__in=['OUVERT', 'ENCOURS']
         ).select_related('stand').order_by('-date_heure_declaration')[:5]
 
         return context
-
 
 
 
@@ -521,23 +550,18 @@ class LancerAllocationView(View):
         return redirect('vol_list')
 
 
-def reallouer_vol_action(request, vol_pk):
+class ReallouerVolActionView(View):
     """
-    Gère la demande de réallocation d'un seul vol.
+    Vue pour réallouer un vol dont le stand a un incident.
     """
-    if request.method != 'POST':
-        messages.error(request, "Erreur de méthode.")
-        return redirect('vol_detail', pk=vol_pk)
-
-    # Appel du service de réallocation
-    succes, message = reallouer_vol_unique(vol_pk)
-
-    if succes:
-        messages.success(request, message)
-    else:
-        messages.warning(request, message) # Warning si échec de la réallocation
-
-    return redirect('vol_detail', pk=vol_pk)
-
-
+    def post(self, request, vol_pk):
+        # Appeler la fonction de réallocation
+        succes, message = reallouer_vol_unique(vol_pk)
+        
+        if succes:
+            messages.success(request, f"✅ {message}")
+        else:
+            messages.warning(request, f"⚠️ {message}")
+        
+        return redirect('vol_list')
 
