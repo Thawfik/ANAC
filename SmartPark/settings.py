@@ -83,8 +83,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'SmartPark',
-        'USER': '',
-        'PASSWORD':"",
+        'USER': 'postgres',
+        'PASSWORD':"Thawfik",
         'PORT': "5432"
     }
 }

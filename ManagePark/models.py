@@ -128,7 +128,7 @@ class Incident(models.Model):
     stand = models.ForeignKey(Stand, on_delete=models.CASCADE, related_name='incidents_rapportes',
                               verbose_name="Parking Affecté")
     description = models.TextField(verbose_name="Description de l'Incident")
-    type_incident = models.CharField(max_length=50, verbose_name="Type (Ex: Panne Électrique)")
+    type_incident = models.CharField(max_length=255, verbose_name="Type (Ex: Panne Électrique)")
 
     # Dates de gestion
     date_heure_declaration = models.DateTimeField(auto_now_add=True, verbose_name="Date/Heure de Déclaration")
