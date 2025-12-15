@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Supprimer Stand{% endblock %}
+{% block title %}Supprimer le Parking{% endblock %}
 {% block title_header %}Confirmation de Suppression{% endblock title_header %}
 
 {% block content %}
     <div class="alert alert-danger shadow-sm">
-        <h4>Êtes-vous sûr de vouloir supprimer le Stand **{{ stand.nom_operationnel }}** ?</h4>
+        <h4>Êtes-vous sûr de vouloir supprimer le parking **{{ stand.nom_operationnel }}** ?</h4>
         <p>Cette action est irréversible et supprimera également toutes les allocations et incidents liés.</p>
 
         <form method="post">

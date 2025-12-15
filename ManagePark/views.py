@@ -1,3 +1,4 @@
+from django.contrib.messages.api import success
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
@@ -11,14 +12,11 @@ from django.contrib import messages
 from django.db import transaction
 
 from . import serviceAllocation
-from .models import Vol, Avion, Stand, Incident
+from .models import Vol, Avion, Stand, Incident, Historique_allocations
 from .forms import StandForm, IncidentForm, VolUpdateForm, AvionForm
-from .serviceAllocation import reallouer_vol_unique, allouer_stands_optimise
+from .serviceAllocation import reallouer_vol_unique, allouer_stands_optimise, liberer_stands_termines
 
 
-# =========================================================
-# VUE DASHBOARD
-# =========================================================
 class AllouerStandsView(View):
     """
     Vue pour déclencher manuellement l'allocation des stands aux vols en attente.
@@ -564,4 +562,27 @@ class ReallouerVolActionView(View):
             messages.warning(request, f"⚠️ {message}")
         
         return redirect('vol_list')
+
+class libererStands(View):
+    """
+        Vue pour libérer les stands en fin d'occupation.
+    """
+    def post(self, request):
+        succes, message = liberer_stands_termines()
+        if succes:
+            messages.success(request, f"✅ {message}")
+        else:
+            messages.warning(request, f" {message}")
+
+        return redirect('historique_allocations')
+
+class historique_allocations(ListView):
+    model = Historique_allocations
+    template_name = 'historique_allocations.html'
+    context_object_name = 'historiques'
+    paginate_by = 25
+
+    def get_queryset(self):
+        return Historique_allocations.objects.all().order_by('-date_heure_fin_occupation')
+
 

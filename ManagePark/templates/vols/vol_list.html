@@ -26,7 +26,7 @@
                         <th>Avion (Immat.)</th>
                         <th>Arrivée (Début Occup.)</th>
                         <th>Départ (Fin Occup.)</th>
-                        <th>Stand Alloué</th>
+                        <th>Parking Alloué</th>
                         <th>Statut</th>
                         <th>Actions</th>
                     </tr>
@@ -40,7 +40,7 @@
                             </td>
                             <td>
                                 {% if vol.avion %}
-                                    {{ vol.avion.immatriculation }} ({{ vol.avion.type_avion }})
+                                    {{ vol.avion.immatriculation }} ({{ vol.avion.type }})
                                 {% else %}
                                     <span class="text-danger">Non Assigné</span>
                                 {% endif %}
@@ -104,7 +104,7 @@
         </div>
     {% else %}
         <div class="alert alert-info" role="alert">
-            Aucun vol n'a été enregistré. Enregistrez-en un pour commencer l'allocation.
+            Aucun vol en cours.
         </div>
     {% endif %}
 

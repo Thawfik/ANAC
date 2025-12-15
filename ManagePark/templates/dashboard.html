@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% block title %}Tableau de Bord Opérationnel{% endblock %}
-{% block title_header %}Aperçu Opérationnel de l'Aéroport{% endblock title_header %}
+{% block title_header %}Aperçu Opérationnel de l'aire de stationnement{% endblock title_header %}
 
 {% block content %}
 
@@ -14,46 +14,46 @@
         {% endfor %}
     {% endif %}
 
-    <h2>📊 Statut des Stands</h2>
+    <h2>📊 Statut des Parkings </h2>
     <div class="row mb-5">
 
-        {# Carte 1: Stands Occupés #}
+        {# Carte 1: Parkings Occupés #}
         <div class="col-md-3">
             <div class="card text-white bg-primary mb-3 shadow">
-                <div class="card-header">Stands Actuellement Occupés</div>
+                <div class="card-header">Parkings Actuellement Occupés</div>
                 <div class="card-body">
                     <h1 class="card-title">{{ stand_stats.occupes }} / {{ stand_stats.total }}</h1>
                 </div>
             </div>
         </div>
 
-        {# Carte 2: Stands Bloqués (Incidents) #}
+        {# Carte 2: Parkings Bloqués (Incidents) #}
         <div class="col-md-3">
             <div class="card text-white bg-danger mb-3 shadow">
-                <div class="card-header">Stands Bloqués (Incidents Actifs)</div>
+                <div class="card-header">Parkings Bloqués (Incidents Actifs)</div>
                 <div class="card-body">
                     <h1 class="card-title">{{ stand_stats.bloques }}</h1>
                 </div>
             </div>
         </div>
 
-        {# Carte 3: Stands Libres/Disponibles #}
+        {# Carte 3: Parkings Libres/Disponibles #}
         <div class="col-md-3">
             <div class="card text-white bg-success mb-3 shadow">
-                <div class="card-header">Stands Libres et Disponibles</div>
+                <div class="card-header">Parkings Libres et Disponibles</div>
                 <div class="card-body">
                     <h1 class="card-title">{{ stand_stats.disponibles }}</h1>
                 </div>
             </div>
         </div>
 
-        {# Carte 4: Stands Disponibles pour Allocation #}
+        {# Carte 4: Parkings Disponibles pour Allocation #}
         <div class="col-md-3">
             <div class="card bg-light mb-3 shadow">
-                <div class="card-header">Stands Total</div>
+                <div class="card-header">Parkings Total</div>
                 <div class="card-body">
                     <h1 class="card-title text-dark">{{ stand_stats.total }}</h1>
-                    <a href="{% url 'stand_list' %}" class="btn btn-sm btn-outline-secondary">Gérer les Stands</a>
+                    <a href="{% url 'stand_list' %}" class="btn btn-sm btn-outline-secondary">Gérer les Parkings</a>
                 </div>
             </div>
         </div>
@@ -123,13 +123,13 @@
 
                             <small class="text-muted">Déclaré le {{ incident.date_heure_declaration|date:"Y-m-d H:i" }}</small>
 
-                            <a href="#" class="btn btn-sm btn-outline-secondary">Gérer</a>
+                            <a href="{% url 'incident_resolve' incident.id %}" class="btn btn-sm btn-outline-secondary">Gérer</a>
                         </li>
                     {% endfor %}
                 </ul>
             {% else %}
                  <div class="alert alert-success" role="alert">
-                    Aucun incident actif. Tous les stands disponibles sont opérationnels.
+                    Aucun incident actif. Tous les Parkings disponibles sont opérationnels.
                  </div>
             {% endif %}
         </div>

@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Gestion Stands Aéroport{% endblock %} | SmartPark</title>
+    <title>{% block title %}Gestion Parkings Aéroport{% endblock %} | SmartPark</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
@@ -58,7 +58,7 @@
         <nav id="sidebar" class="shadow-lg">
             <div class="sidebar-header">
                 <h3><i class="fas fa-plane me-2"></i> **SmartPark**</h3>
-                <small>Système de Gestion des Stands</small>
+                <small>Système de Gestion des Parkings</small>
             </div>
 
             <ul class="list-group list-group-flush mt-3">
@@ -72,7 +72,11 @@
                 </a>
 
                 <a href="{% url 'stand_list' %}" class="list-group-item list-group-item-action {% if 'stands' in request.path and 'incident' not in request.path %}active-link{% endif %}">
-                    <i class="fas fa-parking me-2"></i> Gestion des Stands
+                    <i class="fas fa-parking me-2"></i> Gestion des Parkings
+                </a>
+
+                <a href="{% url 'historique_allocations' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-history me-2"></i>Historique des Allocations
                 </a>
 
                 <a href="{% url 'incident_create_general' %}" class="btn btn-sm btn-block btn-outline-danger w-100 mb-2">

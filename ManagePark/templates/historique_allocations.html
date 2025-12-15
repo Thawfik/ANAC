@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Historique des Allocations{% endblock %}
+{% block title_header %}Journal des Allocations de Vols Terminées{% endblock title_header %}
+
+{% block content %}
+    
+    <h2>📜 Historiques des Allocations Enregistrées</h2>
+
+    {% if historiques %}
+        <div class="table-responsive shadow-sm">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Vol (Arr./Dép.)</th>
+                        <th>Avion (Immat./Type)</th>
+                        <th>Stand Alloué</th>
+                        <th>Début Occupation</th>
+                        <th>Fin Occupation</th>
+                        <th>Durée</th>
+                        <th>Provenance/Destination</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for historique in historiques %}
+                    <tr>
+                        {# Vol (Arr./Dép.) #}
+                        <td>
+                            <strong>{{ historique.num_vol_arrive }}</strong> / {{ historique.num_vol_depart|default:'N/A' }}
+                        </td>
+                        
+                        {# Avion (Immat./Type) #}
+                        <td>
+                            {{ historique.immatriculation_avion }}
+                            <small class="text-muted">({{ historique.type_avion }})</small>
+                        </td>
+                        
+                        {# Stand Alloué #}
+                        <td>
+                            <span class="badge bg-secondary">{{ historique.stand_alloue }}</span>
+                        </td>
+                        
+                        {# Début Occupation #}
+                        <td>{{ historique.date_heure_debut_occupation|date:"Y-m-d H:i" }}</td>
+                        
+                        {# Fin Occupation #}
+                        <td>{{ historique.date_heure_fin_occupation|date:"Y-m-d H:i" }}</td>
+                        
+                        {# Durée (Calcul Simple) #}
+                        <td>
+                            {% if historique.date_heure_debut_occupation and historique.date_heure_fin_occupation %}
+                                {% with diff=historique.date_heure_fin_occupation|timeuntil:historique.date_heure_debut_occupation %}
+                                    {{ diff }}
+                                {% endwith %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        
+                        {# Provenance/Destination #}
+                        <td>
+                            {{ historique.provenance }} &rarr; {{ historique.destination_apres_atterissage }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {# Gestion de la pagination (si paginate_by est utilisé) #}
+        {% if is_paginated %}
+            {% include 'includes/pagination.html' %}
+        {% endif %}
+
+    {% else %}
+        <div class="alert alert-info">
+            Aucun historique d'allocation n'a encore été enregistré.
+        </div>
+    {% endif %}
+
+{% endblock content %}

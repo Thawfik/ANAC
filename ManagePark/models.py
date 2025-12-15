@@ -124,11 +124,9 @@ class Vol(models.Model):
 
 
 
-
-
 class Incident(models.Model):
     stand = models.ForeignKey(Stand, on_delete=models.CASCADE, related_name='incidents_rapportes',
-                              verbose_name="Stand Affecté")
+                              verbose_name="Parking Affecté")
     description = models.TextField(verbose_name="Description de l'Incident")
     type_incident = models.CharField(max_length=50, verbose_name="Type (Ex: Panne Électrique)")
 
@@ -140,3 +138,17 @@ class Incident(models.Model):
 
     def __str__(self):
         return f"Incident sur {self.stand.nom_operationnel} - {self.get_statut_display()}"
+
+
+class Historique_allocations(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    num_vol_arrive = models.CharField()
+    num_vol_depart = models.CharField()
+    date_heure_debut_occupation = models.DateTimeField( null=True )
+    date_heure_fin_occupation = models.DateTimeField(null=True)
+    provenance = models.CharField()
+    destination_apres_atterissage = models.CharField()
+    stand_alloue = models.CharField()
+    immatriculation_avion = models.CharField()
+    type_avion = models.CharField()
+    description_avion = models.CharField()

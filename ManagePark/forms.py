@@ -1,57 +1,12 @@
 from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Row, Column, Field
 from django import forms
 from .models import Vol, Avion, Incident, Stand
 from django.utils import timezone
 
 
-# Définition des champs pour la création de l'Avion dans le formulaire du Vol
-class AvionForm(forms.ModelForm):
-    """
-    Formulaire pour les données de l'Avion.
-    Il sera inclus dans la vue de création de Vol.
-    """
-    # Champ caché pour stocker l'ID de l'Avion si on en réutilise un existant
-    avion_exist_pk = forms.CharField(required=False, widget=forms.HiddenInput())
-
-    class Meta:
-        model = Avion
-        # Note: L'immatriculation doit être le premier champ pour la logique de recherche.
-        fields = ['immatriculation', 'type', 'longueur', 'largeur', 'description']
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-        }
-
-    def clean_immatriculation(self):
-        """
-        Nettoie et standardise l'immatriculation, puis vérifie l'existence.
-        """
-        immatriculation = self.cleaned_data['immatriculation'].upper().strip()
-
-        # Tente de trouver un avion existant avec cette immatriculation
-        try:
-            avion_exist = Avion.objects.get(immatriculation=immatriculation)
-
-            # Si l'avion existe, nous stockons son PK dans le champ caché
-            # et nous validons que les autres champs de l'avion ne sont pas modifiés.
-            self.cleaned_data['avion_exist_pk'] = str(avion_exist.pk)
-
-            # Si un avion est trouvé, seuls l'immatriculation et le type sont nécessaires.
-            # On ignore la validation des autres champs pour ne pas forcer la réentrée des dimensions.
-            # Cependant, dans une application réelle, on pourrait vouloir vérifier la cohérence.
-
-        except Avion.DoesNotExist:
-            # Si l'avion n'existe pas, nous nous assurons que tous les autres champs
-            # (dimensions, type) sont remplis pour pouvoir créer un nouvel Avion.
-            if not all(self.cleaned_data.get(f) for f in ['type', 'longueur', 'largeur']):
-                raise forms.ValidationError(
-                    "Si l'immatriculation est nouvelle, vous devez fournir le type, la longueur et la largeur de l'avion."
-                )
-
-        return immatriculation
-
-
 # --- Formulaire pour le Vol ---
-# Fichier : forms.py
+
 
 class AvionForm(forms.ModelForm):
     # ... (Meta et autres champs) ...
@@ -156,22 +111,32 @@ class VolUpdateForm(forms.ModelForm):
 
         # NOTE : Nous n'incluons pas 'statut' car il doit être géré par les services (Allocation)
 
-        widgets = {
-            'date_heure_debut_occupation': forms.DateTimeInput(
-                attrs={
-                    'type': 'datetime-local',
-                    'class': 'form-control'
-                },
-                format='%Y-%m-%dT%H:%M'
-            ),
-            'date_heure_fin_occupation': forms.DateTimeInput(
-                attrs={
-                    'type': 'datetime-local',
-                    'class': 'form-control'
-                },
-                format='%Y-%m-%dT%H:%M'
-            ),
-        }
+        date_heure_debut_occupation = forms.DateTimeField(
+        label="Heure d'arrivée / Début d'occupation",
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M'],  # Format HTML5 datetime-local
+        widget=forms.DateTimeInput(
+            attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            },
+            format='%Y-%m-%dT%H:%M'
+        )
+    )
+    
+    date_heure_fin_occupation = forms.DateTimeField(
+        label="Heure de départ / Fin d'occupation",
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M'],  # Format HTML5 datetime-local
+        widget=forms.DateTimeInput(
+            attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            },
+            format='%Y-%m-%dT%H:%M'
+        )
+    )
+    
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -184,7 +149,17 @@ class VolUpdateForm(forms.ModelForm):
                     continue
                 # Convertir l'objet datetime en string formatée
                 self.initial[field] = self.initial[field].strftime('%Y-%m-%dT%H:%M')
-
     def clean(self):
+        """Validation personnalisée pour vérifier que la fin est après le début."""
         cleaned_data = super().clean()
+        debut = cleaned_data.get('date_heure_debut_occupation')
+        fin = cleaned_data.get('date_heure_fin_occupation')
+        
+        if debut and fin:
+            if fin <= debut:
+                raise forms.ValidationError(
+                    "L'heure de départ doit être postérieure à l'heure d'arrivée."
+                )
+        
         return cleaned_data
+

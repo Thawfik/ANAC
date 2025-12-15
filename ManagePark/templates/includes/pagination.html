@@ -1,0 +1,44 @@
+{% if is_paginated %}
+    <nav aria-label="Pagination des Résultats" class="my-3">
+        <ul class="pagination justify-content-center">
+            
+            {# --- Bouton Précédent --- #}
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Précédent</span>
+                </li>
+            {% endif %}
+
+            {# --- Numéros de Page --- #}
+            {% for i in paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ i }}</span>
+                    </li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {# --- Bouton Suivant --- #}
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Suivant</span>
+                </li>
+            {% endif %}
+        </ul>
+        <div class="text-center text-muted small">
+            Page {{ page_obj.number }} sur {{ paginator.num_pages }}
+        </div>
+    </nav>
+{% endif %}

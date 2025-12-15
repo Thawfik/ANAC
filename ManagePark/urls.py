@@ -31,5 +31,8 @@ urlpatterns = [
     # Modification/Résolution d'un incident
     path('incidents/<int:pk>/resoudre/', views.IncidentResolutionView.as_view(), name='incident_resolve'),
 
+    path('liberer/stands/', views.libererStands.as_view(), name='liberer_stands'),
+    path('historiques_allocations/', views.historique_allocations.as_view(), name='historique_allocations'),
+
 
 ]

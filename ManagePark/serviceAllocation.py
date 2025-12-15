@@ -3,7 +3,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Vol, Stand
+from .models import Vol, Stand, Historique_allocations
 
 
 def allouer_stands_optimise(vols_a_traiter=None):
@@ -168,32 +168,44 @@ def reallouer_vol_unique(vol_pk: int) -> tuple[bool, str]:
         return False, f"Échec de la réallocation. Vol {vol.num_vol_arrive} mis en file d'attente (ATTENTE). Aucune alternative trouvée."
 
 
-def liberer_stands_termines():
+@transaction.atomic
+def liberer_stands_termines() -> tuple[bool, str]:
     """
-    Service périodique (à appeler via une tâche CRON ou Celery) pour libérer
-    automatiquement les stands dont les vols sont terminés.
-    
-    NOTE: Avec statut_operationnel en @property, cette fonction n'est plus nécessaire
-    pour libérer les stands (ils se libèrent automatiquement). Elle sert juste à
-    marquer les vols comme 'TERMINE'.
-    
-    :return: Nombre de vols marqués comme terminés
+    libère tous les stands qui ne sont plus occupés à l'instant t
     """
-    now = timezone.now()
-    
-    # Trouver tous les vols alloués dont la fin d'occupation est passée
-    vols_termines = Vol.objects.filter(
-        statut='ALLOUE',
-        date_heure_fin_occupation__lte=now
-    )
-    
-    vols_count = 0
-    
-    for vol in vols_termines:
-        # Marquer le vol comme terminé
-        vol.statut = 'TERMINE'
-        vol.save()
-        vols_count += 1
-        print(f"✅ Vol {vol.num_vol_arrive} marqué comme TERMINE")
-    
-    return vols_count
+
+    date_actuelle = timezone.now()
+    vols_termine = Vol.objects.filter(date_heure_fin_occupation__lte=date_actuelle)
+    nbre_vol = Vol.objects.filter(date_heure_fin_occupation__lte=date_actuelle).count()
+    nbre_vol_liberer = 0
+
+    for vol in vols_termine:
+        historique_allocation = Historique_allocations()
+
+        historique_allocation.stand_alloue = vol.stand_alloue.nom_operationnel
+        historique_allocation.num_vol_arrive = vol.num_vol_arrive
+        historique_allocation.num_vol_depart = vol.num_vol_depart
+        historique_allocation.date_heure_debut_occupation = vol.date_heure_debut_occupation
+        historique_allocation.date_heure_fin_occupation = vol.date_heure_fin_occupation
+        historique_allocation.provenance = vol.provenance
+        historique_allocation.destination_apres_atterissage = vol.destination
+        historique_allocation.immatriculation_avion = vol.avion.immatriculation
+        historique_allocation.description_avion = vol.avion.description
+        historique_allocation.type_avion = vol.avion.type
+
+        vol.stand_alloue.disponibilite = True
+        vol.stand_alloue.save()
+        historique_allocation.save()
+        vol.delete()
+        nbre_vol_liberer+=1
+
+
+    if nbre_vol_liberer == nbre_vol:
+        return True, f"Tous les stands ont été libérés"
+    elif nbre_vol_liberer < nbre_vol:
+        return True, f"{nbre_vol_liberer}/{nbre_vol} stands ont été libérés"
+
+
+
+
+

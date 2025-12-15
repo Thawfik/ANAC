@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
-{% block title %}Stand{% endblock %}
-{% block title_header %}Créer un Stand{% endblock title_header %}
+{% block title %}Parking{% endblock %}
+{% block title_header %}Créer un Parking{% endblock title_header %}
 
 {% block content %}
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    {% if stand.pk %}Modifier le Stand {{ stand.nom_operationnel }}{% else %}Créer un Nouveau Stand{% endif %}
+                    {% if stand.pk %}Modifier le Parking {{ stand.nom_operationnel }}{% else %}Créer un Nouveau Parking{% endif %}
                 </div>
                 <div class="card-body">
                     <form method="post">

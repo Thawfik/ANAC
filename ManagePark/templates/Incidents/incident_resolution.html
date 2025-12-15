@@ -1,66 +1,229 @@
 {% extends 'base.html' %}
 {% block title %}Résolution Incident{% endblock %}
-{% block title_header %}Gestion et Résolution de l'Incident du stand {{ incident.stand }}**{% endblock title_header %}
+{% block title_header %}Gestion et Résolution de l'Incident{% endblock title_header %}
+
+{% block extra_css %}
+<style>
+    .incident-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .incident-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    
+    .incident-card .card-header {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        border-radius: 15px 15px 0 0;
+        padding: 1.5rem;
+        color: #fff;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control,
+    .form-select {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 0.75rem;
+        transition: all 0.3s;
+        width: 100%;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+    
+    /* ✅ Style spécial pour le textarea */
+    textarea.form-control {
+        min-height: 150px;
+        resize: vertical;
+        font-family: inherit;
+        line-height: 1.6;
+        background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+    }
+    
+    textarea.form-control:focus {
+        background: #ffffff;
+    }
+    
+    /* Helper text */
+    .form-text {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    /* Messages d'erreur */
+    .text-danger small {
+        font-weight: 500;
+    }
+    /* ✅ Forcer le label à être au-dessus */
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    display: block !important;
+    width: 100% !important;
+}
+
+/* ✅ Textarea prend toute la largeur */
+textarea.form-control {
+    min-height: 150px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.6;
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+    width: 100% !important;
+    display: block !important;
+}
+
+textarea.form-control:focus {
+    background: #ffffff;
+}
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="incident-container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <h5>Détails de l'Incident</h5>
+        <div class="col-md-10 col-lg-8">
+            <div class="card incident-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Gestion de l'Incident - Parking {{ incident.stand.nom_operationnel }}
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
 
-                    <p><strong>Stand Affecté :</strong>
-                        <a href="{% url 'stand_detail' incident.stand.pk %}" class="fw-bold">{{ incident.stand.nom_operationnel }}</a>
-                    </p>
-                    <p><strong>Déclaré le :</strong> {{ incident.date_heure_declaration|date:"d M Y à H:i" }}</p>
+                    <!-- Informations de l'incident -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1">
+                                    <strong><i class="fas fa-warehouse me-2"></i>Parking Affecté :</strong>
+                                    <a href="{% url 'stand_detail' incident.stand.pk %}" class="alert-link">
+                                        {{ incident.stand.nom_operationnel }}
+                                    </a>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-0">
+                                    <strong><i class="far fa-clock me-2"></i>Déclaré le :</strong>
+                                    {{ incident.date_heure_declaration|date:"d M Y à H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <hr>
+                    <hr class="my-4">
 
+                    <!-- Formulaire -->
                     <form method="post">
                         {% csrf_token %}
 
                         <div class="row">
-
+                            <!-- Type d'incident -->
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.type_incident.id_for_label }}" class="form-label">Type d'Incident</label>
+                                <label for="{{ form.type_incident.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tag me-1"></i> Type d'Incident
+                                </label>
                                 {{ form.type_incident }}
-                                {% if form.type_incident.errors %}<div class="invalid-feedback d-block">{{ form.type_incident.errors }}</div>{% endif %}
+                                {% if form.type_incident.errors %}
+                                    <div class="text-danger mt-1">
+                                        <small>{{ form.type_incident.errors }}</small>
+                                    </div>
+                                {% endif %}
                             </div>
 
+                            <!-- Statut -->
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.statut.id_for_label }}" class="form-label">Statut</label>
+                                <label for="{{ form.statut.id_for_label }}" class="form-label">
+                                    <i class="fas fa-info-circle me-1"></i> Statut
+                                </label>
                                 {{ form.statut }}
-                                {% if form.statut.errors %}<div class="invalid-feedback d-block">{{ form.statut.errors }}</div>{% endif %}
+                                {% if form.statut.errors %}
+                                    <div class="text-danger mt-1">
+                                        <small>{{ form.statut.errors }}</small>
+                                    </div>
+                                {% endif %}
                             </div>
-
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">Description Détaillée</label>
-                            {{ form.description }}
-                            {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors }}</div>{% endif %}
+                        <!-- ✅ Description - Prend toute la largeur -->
+                        <div class="mb-4 w-100">
+                                <label for="id_description" class="form-label" style="display: block; width: 100%; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-align-left me-1"></i> Description Détaillée
+                                </label>
+                                <textarea name="description" 
+                                        id="id_description"
+                                        class="form-control"
+                                        rows="6"
+                                        style="width: 100%; display: block;"
+                                        placeholder="Décrivez l'incident en détail...">{% if form.description.value %}{{ form.description.value }}{% endif %}</textarea>
+                                {% if form.description.errors %}
+                                    <div class="text-danger mt-2">
+                                        <small><i class="fas fa-exclamation-circle me-1"></i>{{ form.description.errors }}</small>
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted" style="display: block; margin-top: 0.5rem;">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Décrivez précisément l'incident, sa cause et les actions entreprises.
+                                </small>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.date_heure_resolution.id_for_label }}" class="form-label">Date/Heure de Résolution (S'affiche si Statut = Résolu)</label>
-                            {% if form.date_heure_resolution.value %}
-                                {{ form.date_heure_resolution }}
-                            {% else %}
-                                <input type="datetime-local" name="{{ form.date_heure_resolution.name }}"
-                                       class="form-control" value="{{ now|date:'Y-m-d\TH:i' }}">
+                        <!-- Date de résolution -->
+                        <div class="mb-4">
+                            <label for="date_heure_resolution" class="form-label">
+                                <i class="fas fa-check-circle me-1"></i> Date/Heure de Résolution
+                            </label>
+                            
+                            <input type="datetime-local" 
+                                   name="date_heure_resolution"
+                                   id="date_heure_resolution"
+                                   class="form-control"
+                                   value="{% if form.date_heure_resolution.value %}{{ form.date_heure_resolution.value|date:'Y-m-d\TH:i' }}{% endif %}">
+                            
+                            {% if form.date_heure_resolution.errors %}
+                                <div class="text-danger mt-1">
+                                    <small>{{ form.date_heure_resolution.errors }}</small>
+                                </div>
                             {% endif %}
-                            {% if form.date_heure_resolution.errors %}<div class="invalid-feedback d-block">{{ form.date_heure_resolution.errors }}</div>{% endif %}
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Obligatoire uniquement si le statut est "Résolu".
+                            </small>
                         </div>
 
-                        <div class="mt-4 d-flex justify-content-end">
-                            <button type="submit" class="btn btn-warning me-2"><i class="fas fa-save"></i> Enregistrer les Modifications</button>
-                            <a href="{% url 'stand_detail' incident.stand.pk %}" class="btn btn-secondary">Annuler</a>
+                        <hr class="my-4">
+
+                        <!-- Boutons d'action -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-warning px-4 py-2">
+                                <i class="fas fa-save me-2"></i>Enregistrer les Modifications
+                            </button>
+                            <a href="{% url 'stand_detail' incident.stand.pk %}" class="btn btn-secondary px-4 py-2">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock content %}

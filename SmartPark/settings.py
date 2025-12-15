@@ -130,3 +130,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Formats de date/heure personnalisés
+USE_L10N = True
+USE_TZ = True
+
+DATETIME_INPUT_FORMATS = [
+    '%Y-%m-%dT%H:%M',        # Format HTML5 datetime-local
+    '%Y-%m-%d %H:%M:%S',     # Format Django par défaut
+    '%Y-%m-%d %H:%M',
+    '%d/%m/%Y %H:%M',
+]
