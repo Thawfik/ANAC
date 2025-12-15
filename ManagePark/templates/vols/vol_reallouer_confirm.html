@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% block title %}Confirmation de Réallocation{% endblock %}
+{% block title_header %}Réallocation du Vol {{ vol.num_vol_arrive }}{% endblock title_header %}
+
+{% block extra_css %}
+<style>
+    .confirm-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 3rem 0;
+    }
+    
+    .confirm-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+    
+    .confirm-header {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        padding: 2rem;
+        color: #fff;
+    }
+    
+    .confirm-header h4 {
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .incident-alert {
+        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        color: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(239, 83, 80, 0.3);
+    }
+    
+    .options-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .option-card {
+        border: 3px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s;
+        background: #fff;
+    }
+    
+    .option-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .option-card.reallouer {
+        border-color: #ff9800;
+    }
+    
+    .option-card.reallouer:hover {
+        border-color: #f57c00;
+        background: #fff3e0;
+    }
+    
+    .option-card.garder {
+        border-color: #4caf50;
+    }
+    
+    .option-card.garder:hover {
+        border-color: #388e3c;
+        background: #e8f5e9;
+    }
+    
+    .option-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .option-card.reallouer .option-icon {
+        color: #ff9800;
+    }
+    
+    .option-card.garder .option-icon {
+        color: #4caf50;
+    }
+    
+    .btn-option {
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 25px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+    }
+    
+    .btn-reallouer {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        color: #fff;
+    }
+    
+    .btn-reallouer:hover {
+        background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 124, 0, 0.4);
+    }
+    
+    .btn-garder {
+        background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        color: #fff;
+    }
+    
+    .btn-garder:hover {
+        background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+    
+    @media (max-width: 768px) {
+        .options-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirm-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card confirm-card">
+                <div class="confirm-header">
+                    <h4>
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmation de Réallocation - Vol {{ vol.num_vol_arrive }}
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <!-- Alerte incident -->
+                    <div class="incident-alert">
+                        <h5 class="mb-3">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Incident Actif sur le Parking
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong>Parking actuel :</strong> {{ vol.stand_alloue.nom_operationnel }}
+                                </p>
+                                <p class="mb-0">
+                                    <strong>Statut :</strong> 
+                                    <span class="badge bg-danger text-ligth">HORS SERVICE</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong>Incident(s) :</strong> {{ incidents_actifs.count }}
+                                </p>
+                                {% for incident in incidents_actifs %}
+                                    <p class="mb-0">
+                                        <i class="fas fa-tag me-1"></i>
+                                        {{ incident.type_incident }}
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations du vol -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="mb-2"><strong>Informations du Vol :</strong></h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-1">
+                                    <i class="fas fa-plane me-2"></i>
+                                    <strong>Vol :</strong> {{ vol.num_vol_arrive }}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1">
+                                    <i class="fas fa-plane-arrival me-2"></i>
+                                    <strong>Arrivée :</strong> {{ vol.date_heure_debut_occupation|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-0">
+                                    <i class="fas fa-plane-departure me-2"></i>
+                                    <strong>Départ :</strong> {{ vol.date_heure_fin_occupation|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="text-center mb-4">Que souhaitez-vous faire ?</h5>
+
+                    <!-- Options -->
+                    <div class="options-container">
+                        
+                        <!-- Option 1: Réallouer -->
+                        <div class="option-card reallouer">
+                             <h5 class="mb-3">Réallouer à un autre parking</h5>
+                            <p class="text-muted mb-4">
+                                Le système recherchera automatiquement un autre parking disponible compatible avec cet avion.
+                            </p>
+                            <ul class="text-start text-muted small mb-4">
+                                <li>Vol mis en attente temporairement</li>
+                                <li>Recherche automatique d'alternatives</li>
+                                <li>L'incident reste ouvert</li>
+                            </ul>
+                            
+                            <form method="post" action="{% url 'reallouer_vol_action' vol.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reallouer">
+                                <button type="submit" class="btn btn-option btn-reallouer" style="text-decoration: underline;" >
+                                    <i class="fas fa-sync me-2"></i>Confirmer la Réallocation
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Option 2: Garder le parking -->
+                        <div class="option-card garder">
+                            <h5 class="mb-3">Garder le parking actuel</h5>
+                            <p class="text-muted mb-4">
+                                L'incident sera résolu avant l'arrivé du vol et le parking redeviendra opérationnel pour ce vol.
+                            </p>
+                            <ul class="text-start text-muted small mb-4">
+                                <li>Incident marqué comme résolu</li>
+                                <li>Parking redevient "Occupé"</li>
+                                <li>Vol conserve son allocation</li>
+                            </ul>
+                            
+                            <form method="post" action="{% url 'reallouer_vol_action' vol.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="garder">
+                                <button type="submit" class="btn btn-option btn-garder" style="text-decoration: underline;">
+                                    <i class="fas fa-check me-2"></i>Garder le Parking alloué
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Bouton Annuler -->
+                    <div class="text-center">
+                        <a href="{% url 'vol_list' %}" class="btn btn-secondary px-4">
+                            <i class="fas fa-times me-2"></i>Annuler et Retourner
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -5,6 +5,9 @@ urlpatterns = [
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 
     path('vols/', views.VolListView.as_view(), name='vol_list'),
+    path('vols/demain/', views.VolListTomorrowView.as_view(), name='vol_demain'),
+    path('date_future/', views.VolListFutureView.as_view(), name='vols_date_future'),
+
     path('vols/creer/', views.VolCreateView.as_view(), name='vol_create'),
     path('vols/<uuid:pk>/', views.VolDetailView.as_view(), name='vol_detail'),
     path('vols/<uuid:pk>/modifier/', views.VolUpdateView.as_view(), name='vol_update'),
@@ -18,7 +21,7 @@ urlpatterns = [
     path('stands/<uuid:pk>/modifier/', views.StandUpdateView.as_view(), name='stand_update'),
     path('stands/<uuid:pk>/supprimer/', views.StandDeleteView.as_view(), name='stand_delete'),
     path('vols/allocation/', views.LancerAllocationView.as_view(), name='allouer_stands'),
-    path('vols/<uuid:vol_pk>/reallouer/', views.ReallouerVolActionView.as_view(), name='reallouer_vol_action'),
+    path('vols/<uuid:pk>/reallouer/', views.ReallouerVolActionView.as_view(), name='reallouer_vol_action'),
 
    
 

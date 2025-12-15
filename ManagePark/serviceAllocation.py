@@ -1,4 +1,6 @@
 # Fichier : services/allocationService.py
+from datetime import date
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -21,12 +23,12 @@ def allouer_stands_optimise(vols_a_traiter=None):
     :param vols_a_traiter: QuerySet de vols à traiter spécifiquement, ou None pour tous les vols 'ATTENTE'.
     :return: Tuple (nombre de vols alloués, nombre de vols non alloués)
     """
-
+    date_aujourdhui = date.today()
     # 1. Identifier les vols à traiter
     if vols_a_traiter is None:
-        vols = Vol.objects.filter(statut='ATTENTE').select_related('avion').order_by('date_heure_debut_occupation')
+        vols = Vol.objects.filter(statut='ATTENTE', date_heure_debut_occupation__date=date_aujourdhui).select_related('avion').order_by('date_heure_debut_occupation')
     else:
-        vols = vols_a_traiter.filter(statut='ATTENTE').select_related('avion').order_by('date_heure_debut_occupation')
+        vols = vols_a_traiter.filter(statut='ATTENTE', date_heure_debut_occupation__date=date_aujourdhui).select_related('avion').order_by('date_heure_debut_occupation')
 
     # 2. Récupérer les stands actifs (disponibles et sans incident)
     stands_actifs = Stand.objects.filter(

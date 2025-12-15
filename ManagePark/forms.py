@@ -163,3 +163,15 @@ class VolUpdateForm(forms.ModelForm):
         
         return cleaned_data
 
+from datetime import date, timedelta
+
+class DateFilterForm(forms.Form):
+    date_choisie = forms.DateField(
+        label="Date",
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'min': date.today().isoformat()
+        }),
+        required=True
+    )
