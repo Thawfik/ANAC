@@ -52,6 +52,12 @@ class AvionForm(forms.ModelForm):
         return cleaned_data
 
 
+class AvionUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Avion
+        fields = ['immatriculation', 'type', 'description', 'longueur', 'largeur']
+
+
 class StandForm(forms.ModelForm):
     class Meta:
         model = Stand
@@ -93,51 +99,42 @@ class IncidentForm(forms.ModelForm):
 
 
 class VolUpdateForm(forms.ModelForm):
-    # Permet de modifier l'avion lié au vol (au cas où l'immatriculation change)
-    avion = forms.ModelChoiceField(
-        queryset=Avion.objects.all(),
+    date_heure_debut_occupation = forms.DateTimeField(
+        label="Heure d'arrivée / Début d'occupation",
         required=False,
-        label="Avion (Immatriculation)",
-        empty_label="--- Choisir un Avion ---"
+        # input_formats n'est généralement pas nécessaire pour datetime-local
+        input_formats=['%Y-%m-%dT%H:%M'],  # Format HTML5 datetime-local
+        widget=forms.DateTimeInput(
+            attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            },
+            format='%Y-%m-%dT%H:%M'
+        )
+    )
+
+    date_heure_fin_occupation = forms.DateTimeField(
+        label="Heure de départ / Fin d'occupation",
+        required=False,
+        # input_formats n'est généralement pas nécessaire pour datetime-local
+        input_formats=['%Y-%m-%dT%H:%M'],  # Format HTML5 datetime-local
+        widget=forms.DateTimeInput(
+            attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            },
+            format='%Y-%m-%dT%H:%M'
+        )
     )
 
     class Meta:
         model = Vol
         fields = [
             'num_vol_arrive', 'num_vol_depart',
-            'date_heure_debut_occupation', 'date_heure_fin_occupation', 'provenance',
-            'destination', 'avion'
+            'date_heure_debut_occupation', 'date_heure_fin_occupation',
+            'provenance', 'destination', 'avion'
         ]
 
-        # NOTE : Nous n'incluons pas 'statut' car il doit être géré par les services (Allocation)
-
-        date_heure_debut_occupation = forms.DateTimeField(
-        label="Heure d'arrivée / Début d'occupation",
-        required=False,
-        input_formats=['%Y-%m-%dT%H:%M'],  # Format HTML5 datetime-local
-        widget=forms.DateTimeInput(
-            attrs={
-                'type': 'datetime-local',
-                'class': 'form-control'
-            },
-            format='%Y-%m-%dT%H:%M'
-        )
-    )
-    
-    date_heure_fin_occupation = forms.DateTimeField(
-        label="Heure de départ / Fin d'occupation",
-        required=False,
-        input_formats=['%Y-%m-%dT%H:%M'],  # Format HTML5 datetime-local
-        widget=forms.DateTimeInput(
-            attrs={
-                'type': 'datetime-local',
-                'class': 'form-control'
-            },
-            format='%Y-%m-%dT%H:%M'
-        )
-    )
-    
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Formater les dates existantes pour l'affichage
@@ -154,14 +151,15 @@ class VolUpdateForm(forms.ModelForm):
         cleaned_data = super().clean()
         debut = cleaned_data.get('date_heure_debut_occupation')
         fin = cleaned_data.get('date_heure_fin_occupation')
-        
+
         if debut and fin:
             if fin <= debut:
                 raise forms.ValidationError(
                     "L'heure de départ doit être postérieure à l'heure d'arrivée."
                 )
-        
+
         return cleaned_data
+
 
 from datetime import date, timedelta
 

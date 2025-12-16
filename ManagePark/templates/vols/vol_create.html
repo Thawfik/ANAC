@@ -1,7 +1,15 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
-{% block title %}Enregistrer un Vol{% endblock %}
-{% block title_header %}Création d'un Nouveau Vol{% endblock title_header %}
+
+{# 1. Mettre le titre de la page dans le bandeau de l'onglet #}
+{% block title %}
+    {% if page_title %}{{ page_title }}{% else %}Gestion du Vol{% endif %}
+{% endblock %}
+
+{# 2. Mettre le titre principal dans le header #}
+{% block title_header %}
+    {% if page_title %}{{ page_title }}{% else %}Création/Modification Vol{% endif %}
+{% endblock title_header %}
 
 {% block content %}
     <div class="card shadow-sm">
@@ -76,7 +84,12 @@
 
                 <div class="mt-4">
                     <button type="submit" class="btn btn-primary btn-lg">
-                        Enregistrer
+                        {# 3. Utiliser la variable pour le texte du bouton #}
+                        {% if button_text %}
+                            {{ button_text }}
+                        {% else %}
+                            Enregistrer
+                        {% endif %}
                     </button>
                     <a href="{% url 'vol_list' %}" class="btn btn-secondary">Annuler</a>
                 </div>
